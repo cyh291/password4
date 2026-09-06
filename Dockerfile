@@ -1,14 +1,13 @@
-# 使用 Java 11 运行环境
-FROM openjdk:11-jre-slim
-
-# 设置工作目录
+# 第一阶段：编译打包
+FROM maven:3.8.4-openjdk-11 AS build
 WORKDIR /app
+COPY pom.xml .
+RUN mvn dependency:go-offline
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-# 复制打包好的 jar 文件
-COPY target/*.jar app.jar
-
-# 暴露端口（Render 默认用 8080）
+# 第二阶段：运行（使用 Eclipse Temurin 镜像）
+FROM eclipse-temurin:11-jre
+COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
-
-# 启动命令
 ENTRYPOINT ["java", "-jar", "app.jar"]
